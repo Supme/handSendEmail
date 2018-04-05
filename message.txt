@@ -1,0 +1,47 @@
+Content-Type: multipart/mixed; boundary="===============1_MIXED========"
+MIME-Version: 1.0
+
+This is a multi-part message in MIME format.
+
+--===============1_MIXED========
+Content-Type: multipart/related; boundary="===============2_RELATED======"
+MIME-Version: 1.0
+
+--===============2_RELATED======
+Content-Type: multipart/alternative; boundary="===============3_ALTERNATIVE=="
+MIME-Version: 1.0
+
+--===============3_ALTERNATIVE==
+Content-Type: text/html; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+
+Здесь HTML блок закодированный в base64 если есть
+
+--===============3_ALTERNATIVE==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+
+Здесь текстовый блок закодированный в base64 если есть
+
+--===============3_ALTERNATIVE==--
+
+--===============2_RELATED======
+Content-Type: {http.DetectContentType}; name="{name}"
+Content-Transfer-Encoding: base64
+Content-ID: <{name}>
+Content-Disposition: inline; filename="{name}"; size={filesize};
+
+тут файл для внутренностей письма закодированный в base64, если несколько, то повторяем блок
+
+--================2_RELATED======--
+
+--===============1_MIXED========
+Content-Type: {http.DetectContentType}; name="{name}"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="{name}"; size={filesize};
+
+тут вложенный файл закодированный в base64, если несколько, то повторяем блок
+
+--===============1_MIXED========--

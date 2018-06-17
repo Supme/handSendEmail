@@ -7,19 +7,24 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 const addr = ":8080"
 
 func main() {
-
 	buf := bytes.NewBufferString("Email body:\r\n")
-	emailBody(buf, emailStruct{
-		textHTML:  "<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>",
-		textPlain: "Съешь ещё этих мягких французских булок да выпей чаю",
-		relatedFile:   nil,
-		attachmentFile:nil,
-	})
+	e := NewEmailMessage()
+
+	e.SetTextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>")
+	e.SetTextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
+	f, err := os.Open("message.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	e.AddAttachmentFile(f)
+
+	e.BodyWrite(buf)
 	fmt.Println(buf.String())
 	return
 
@@ -33,7 +38,7 @@ func main() {
 	})
 
 	fmt.Println("Listen on", addr)
-	http.ListenAndServe(addr, mux)
+	panic(http.ListenAndServe(addr, mux))
 }
 
 func root(w http.ResponseWriter, r *http.Request) {

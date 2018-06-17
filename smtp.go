@@ -86,119 +86,125 @@ func (m Message) BodyWrite(w io.Writer) {
 	w.Write([]byte("\r\n"))
 
 	// У нас будут зависящие друг от друга блоки с mixed разделителем вверху
-	w.Write([]byte(boundaryMixedBegin))
-	w.Write([]byte("Content-Type: multipart/related; boundary=\"" + boundaryRelated + "\"\r\n"))
-	w.Write([]byte("MIME-Version: 1.0\r\n"))
-	w.Write([]byte("\r\n"))
-
-	// Первым зависящим блоком будут альтернативные версии с related разделителем вверху
-	w.Write([]byte(boundaryRelatedBegin))
-	w.Write([]byte("Content-Type: multipart/alternative; boundary=\"" + boundaryAlternative + "\"\r\n"))
-	w.Write([]byte("MIME-Version: 1.0\r\n"))
-	w.Write([]byte("\r\n"))
-
-	// Если textHTML не пуст добавляем альтернативный блок text/html с alternative разделителем вверху
-	if m.textHTML != "" {
-		w.Write([]byte(boundaryAlternativeBegin))
-		w.Write([]byte("Content-Type: text/html; charset=\"utf-8\"\r\n"))
+	{
+		w.Write([]byte(boundaryMixedBegin))
+		w.Write([]byte("Content-Type: multipart/related; boundary=\"" + boundaryRelated + "\"\r\n"))
 		w.Write([]byte("MIME-Version: 1.0\r\n"))
-		w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
 		w.Write([]byte("\r\n"))
-		// Пишем textHTML кодируя его в base64 с переводом строки и возвратом каретки каждые 76 символов
-		base64TextWriter(w, m.textHTML)
-		w.Write([]byte("\r\n"))
-		w.Write([]byte("\r\n"))
-	}
 
-	// Если textPlain не пуст добавляем блок text/plain с alternative разделителем вверху
-	if m.textPlain != "" {
-		w.Write([]byte("Content-Type: text/plain; charset=\"utf-8\"\r\n"))
-		w.Write([]byte("MIME-Version: 1.0\r\n"))
-		w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
-		w.Write([]byte("\r\n"))
-		// Пишем textPlain кодируя аналогично textHTML
-		base64TextWriter(w, m.textPlain)
-		w.Write([]byte("\r\n"))
-		w.Write([]byte("\r\n"))
-	}
-
-	// Закрываем блок альтернатив
-	w.Write([]byte(boundaryAlternativeEnd))
-	w.Write([]byte("\r\n"))
-
-	// Если есть зависящие файлы
-	if len(m.relatedFile) > 0 {
-		// Будем все отправлять
-		for i := range m.relatedFile {
-			// Сперва соберём необходимую информацию о файле
-			var (
-				// нам нужно имя файла
-				name string
-				// его размер
-				size string
-				// и mime тип
-				mime string
-			)
-			name = filepath.Base(m.relatedFile[i].Name())
-			info, _ := m.relatedFile[i].Stat()
-			size = strconv.FormatInt(info.Size(), 10)
-			buf := make([]byte, 512)
-			m.relatedFile[i].Read(buf)
-			mime = http.DetectContentType(buf)
-			// Вернём курсор чтения файла в начало
-			m.relatedFile[i].Seek(0, 0)
-			// Пишем заголовок для файла с related разделителем вверху
+		// Первым зависящим блоком будут альтернативные версии с related разделителем вверху
+		{
 			w.Write([]byte(boundaryRelatedBegin))
-			w.Write([]byte("Content-Type: " + mime + "; name=\"" + name + "\"\r\n"))
-			w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
-			w.Write([]byte("Content-ID: <" + name + ">\r\n"))
-			w.Write([]byte("Content-Disposition: inline; filename=\"" + name + "\"; size=" + size + ";\r\n"))
-			w.Write([]byte("\r\n"))
-			// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
-			base64FileWriter(w, m.relatedFile[i])
-			w.Write([]byte("\r\n"))
+
+			{
+				w.Write([]byte("Content-Type: multipart/alternative; boundary=\"" + boundaryAlternative + "\"\r\n"))
+				w.Write([]byte("MIME-Version: 1.0\r\n"))
+				w.Write([]byte("\r\n"))
+
+				// Если textHTML не пуст добавляем альтернативный блок text/html с alternative разделителем вверху
+				if m.textHTML != "" {
+					w.Write([]byte(boundaryAlternativeBegin))
+					w.Write([]byte("Content-Type: text/html; charset=\"utf-8\"\r\n"))
+					w.Write([]byte("MIME-Version: 1.0\r\n"))
+					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
+					w.Write([]byte("\r\n"))
+					// Пишем textHTML кодируя его в base64 с переводом строки и возвратом каретки каждые 76 символов
+					base64TextWriter(w, m.textHTML)
+					w.Write([]byte("\r\n"))
+					w.Write([]byte("\r\n"))
+				}
+
+				// Если textPlain не пуст добавляем блок text/plain с alternative разделителем вверху
+				if m.textPlain != "" {
+					w.Write([]byte(boundaryAlternativeBegin))
+					w.Write([]byte("Content-Type: text/plain; charset=\"utf-8\"\r\n"))
+					w.Write([]byte("MIME-Version: 1.0\r\n"))
+					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
+					w.Write([]byte("\r\n"))
+					// Пишем textPlain кодируя аналогично textHTML
+					base64TextWriter(w, m.textPlain)
+					w.Write([]byte("\r\n"))
+					w.Write([]byte("\r\n"))
+				}
+
+				// Закрываем блок альтернатив
+				w.Write([]byte(boundaryAlternativeEnd))
+				w.Write([]byte("\r\n"))
+
+			}
+
+			// Если есть зависящие файлы
+			if len(m.relatedFile) > 0 {
+				// Будем все отправлять
+				for i := range m.relatedFile {
+					// Сперва соберём необходимую информацию о файле
+					var (
+						// нам нужно имя файла
+						name string
+						// его размер
+						size string
+						// и mime тип
+						mime string
+					)
+					name = filepath.Base(m.relatedFile[i].Name())
+					info, _ := m.relatedFile[i].Stat()
+					size = strconv.FormatInt(info.Size(), 10)
+					buf := make([]byte, 512)
+					m.relatedFile[i].Read(buf)
+					mime = http.DetectContentType(buf)
+					// Вернём курсор чтения файла в начало
+					m.relatedFile[i].Seek(0, 0)
+					// Пишем заголовок для файла с related разделителем вверху
+					w.Write([]byte(boundaryRelatedBegin))
+					w.Write([]byte("Content-Type: " + mime + "; name=\"" + name + "\"\r\n"))
+					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
+					w.Write([]byte("Content-ID: <" + name + ">\r\n"))
+					w.Write([]byte("Content-Disposition: inline; filename=\"" + name + "\"; size=" + size + ";\r\n"))
+					w.Write([]byte("\r\n"))
+					// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
+					base64FileWriter(w, m.relatedFile[i])
+					w.Write([]byte("\r\n"))
+				}
+			}
+
+			// Закрываем блок зависящих
+			w.Write([]byte(boundaryRelatedEnd))
 			w.Write([]byte("\r\n"))
 		}
-	}
 
-	// Закрываем блок зависящих
-	w.Write([]byte(boundaryRelatedEnd))
-	w.Write([]byte("\r\n"))
-
-	// Если есть файлы для вложения
-	if len(m.attachmentFile) > 0 {
-		// Будем все отправлять
-		for i := range m.attachmentFile {
-			// Сперва соберём необходимую информацию о файле
-			var (
-				// нам нужно имя файла
-				name string
-				// его размер
-				size string
-				// и mime тип
-				mime string
-			)
-			name = filepath.Base(m.attachmentFile[i].Name())
-			info, _ := m.attachmentFile[i].Stat()
-			size = strconv.FormatInt(info.Size(), 10)
-			buf := make([]byte, 512)
-			m.attachmentFile[i].Read(buf)
-			mime = http.DetectContentType(buf)
-			// Вернём курсор чтения файла в начало
-			m.attachmentFile[i].Seek(0, 0)
-			// Пишем заголовок для файла с related разделителем вверху
-			w.Write([]byte(boundaryAlternativeBegin))
-			w.Write([]byte("Content-Type: " + mime + "; name=\"" + name + "\"\r\n"))
-			w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
-			w.Write([]byte("Content-Disposition: attachment; filename=\"" + name + "\"; size=" + size + ";\r\n"))
-			w.Write([]byte("\r\n"))
-			// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
-			base64FileWriter(w, m.attachmentFile[i])
-			w.Write([]byte("\r\n"))
-			w.Write([]byte("\r\n"))
+		// Если есть файлы для вложения
+		if len(m.attachmentFile) > 0 {
+			// Будем все отправлять
+			for i := range m.attachmentFile {
+				// Сперва соберём необходимую информацию о файле
+				var (
+					// нам нужно имя файла
+					name string
+					// его размер
+					size string
+					// и mime тип
+					mime string
+				)
+				name = filepath.Base(m.attachmentFile[i].Name())
+				info, _ := m.attachmentFile[i].Stat()
+				size = strconv.FormatInt(info.Size(), 10)
+				buf := make([]byte, 512)
+				m.attachmentFile[i].Read(buf)
+				mime = http.DetectContentType(buf)
+				// Вернём курсор чтения файла в начало
+				m.attachmentFile[i].Seek(0, 0)
+				// Пишем заголовок для файла с mixed разделителем вверху
+				w.Write([]byte(boundaryMixedBegin))
+				w.Write([]byte("Content-Type: " + mime + "; name=\"" + name + "\"\r\n"))
+				w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
+				w.Write([]byte("Content-Disposition: attachment; filename=\"" + name + "\"; size=" + size + ";\r\n"))
+				w.Write([]byte("\r\n"))
+				// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
+				base64FileWriter(w, m.attachmentFile[i])
+				w.Write([]byte("\r\n"))
+			}
 		}
 
-		w.Write([]byte(boundaryAlternativeEnd + "\r\n"))
 	}
 
 	// И закрываем наше сообщение

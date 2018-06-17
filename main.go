@@ -18,11 +18,17 @@ func main() {
 
 	e.SetTextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>")
 	e.SetTextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
-	f, err := os.Open("message.txt")
+	fRelated, err := os.Open("template/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
-	e.AddAttachmentFile(f)
+	e.AddRelatedFile(fRelated)
+
+	fAttachment, err := os.Open("message.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	e.AddAttachmentFile(fAttachment)
 
 	e.BodyWrite(buf)
 	fmt.Println(buf.String())

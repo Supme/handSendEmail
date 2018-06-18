@@ -30,6 +30,8 @@ type Message struct {
 	to   []mail
 	cc   []mail
 
+	headers map[string]string
+
 	textHTML       string
 	textPlain      string
 	relatedFile    []*os.File
@@ -61,6 +63,12 @@ func (m *Message) Cc(email, name string) {
 	})
 }
 
+func (m *Message) AddHeaders(headers map[string]string) {
+	for k, v := range headers {
+		m.headers[k] = v
+	}
+}
+
 func (m *Message) SetTextHTML(textHTML string) {
 	m.textHTML = textHTML
 }
@@ -75,6 +83,10 @@ func (m *Message) AddRelatedFile(file *os.File) {
 
 func (m *Message) AddAttachmentFile(file *os.File) {
 	m.attachmentFile = append(m.attachmentFile, file)
+}
+
+func (m Message) HeaderWrite(w io.Writer) {
+	// ToDo
 }
 
 func (m Message) BodyWrite(w io.Writer) {

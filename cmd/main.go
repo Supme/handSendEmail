@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	email "github.com/supme/handSendEmail"
 	"html/template"
 	"log"
 	"net/http"
@@ -14,23 +15,31 @@ const addr = ":8080"
 
 func main() {
 	buf := bytes.NewBufferString("Email body:\r\n")
-	e := NewEmailMessage()
+	e := email.NewMessage()
 
-	e.SetTextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>")
-	e.SetTextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
+	e.From("Алексей", "alexey@domain.tld")
+	e.To("Василий", "vasiliy@domain.tld")
+	e.To("Фёдор", "fedor@domain.tld")
+	e.Cc("Василий 1", "vasiliy_1@domain.tld")
+	e.Cc("Фёдор 1", "fedor_1@domain.tld")
+	e.Bcc("Василий 2", "vasiliy_2@domain.tld")
+	e.Bcc("Фёдор 2", "fedor_2@domain.tld")
+	e.Subject("Тестовый email")
+	e.TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>")
+	e.TextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
 	fRelated, err := os.Open("template/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
 	e.AddRelatedFile(fRelated)
 
-	fAttachment, err := os.Open("message.txt")
+	fAttachment, err := os.Open("../message.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 	e.AddAttachmentFile(fAttachment)
 
-	e.BodyWrite(buf)
+	e.Write(buf)
 	fmt.Println(buf.String())
 	return
 

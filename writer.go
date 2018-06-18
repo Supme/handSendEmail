@@ -1,4 +1,4 @@
-package main
+package handSendEmail
 
 import (
 	"encoding/base64"

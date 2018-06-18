@@ -33,7 +33,7 @@ Content-Transfer-Encoding: base64
 Content-ID: <{name}>
 Content-Disposition: inline; filename="{name}"; size={filesize};
 
-тут файл для внутренностей письма закодированный в base64, если несколько, то повторяем блок
+тут файл для внутренностей письма закодированный в base64, если несколько, то повторяем блок, начиная с related разделителя
 
 --================2_RELATED======--
 
@@ -42,6 +42,6 @@ Content-Type: {http.DetectContentType}; name="{name}"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="{name}"; size={filesize};
 
-тут вложенный файл закодированный в base64, если несколько, то повторяем блок
+тут вложенный файл закодированный в base64, если несколько, то повторяем блок, начиная с mixed разделителя
 
 --===============1_MIXED========--

@@ -1,11 +1,15 @@
-package main
+// https://tools.ietf.org/html/rfc2076
+package handSendEmail
 
 import (
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -20,47 +24,68 @@ const (
 	boundaryAlternativeEnd   = "--" + boundaryAlternative + "--\r\n"
 )
 
-type mail struct {
-	email string
+type Mail struct {
 	name  string
+	email string
+}
+
+func NewMail(name, email string) Mail {
+	return Mail{
+		name:  name,
+		email: email,
+	}
+}
+
+func (m Mail) String() string {
+	if m.name == "" {
+		return m.email
+	}
+	return mime.BEncoding.Encode("utf-8", m.name) + "<" + m.email + ">"
+}
+
+func JoinMails(ms []Mail) string {
+	msStr := make([]string, len(ms))
+	for i := range ms {
+		msStr = append(msStr, ms[i].String())
+	}
+	return strings.Join(msStr, ", ")
 }
 
 type Message struct {
-	from mail
-	to   []mail
-	cc   []mail
-
-	headers map[string]string
-
+	from           Mail
+	to             []Mail
+	cc             []Mail
+	bcc            []Mail
+	headers        map[string]string
+	subject        string
 	textHTML       string
 	textPlain      string
 	relatedFile    []*os.File
 	attachmentFile []*os.File
 }
 
-func NewEmailMessage() *Message {
+func NewMessage() *Message {
 	return new(Message)
 }
 
-func (m *Message) From(email, name string) {
-	m.from = mail{
-		email: email,
-		name:  name,
-	}
+func (m *Message) From(name, email string) {
+	m.from = NewMail(name, email)
 }
 
-func (m *Message) To(email, name string) {
-	m.to = append(m.to, mail{
-		email: email,
-		name:  name,
-	})
+func (m *Message) To(name, email string) {
+	m.to = append(m.to, NewMail(name, email))
 }
 
-func (m *Message) Cc(email, name string) {
-	m.cc = append(m.cc, mail{
-		email: email,
-		name:  name,
-	})
+func (m *Message) Cc(name, email string) {
+	m.cc = append(m.cc, NewMail(name, email))
+}
+
+func (m *Message) Bcc(name, email string) {
+	m.bcc = append(m.bcc, NewMail(name, email))
+}
+
+func (m *Message) Subject(subject string) {
+	m.subject = subject
 }
 
 func (m *Message) AddHeaders(headers map[string]string) {
@@ -69,11 +94,11 @@ func (m *Message) AddHeaders(headers map[string]string) {
 	}
 }
 
-func (m *Message) SetTextHTML(textHTML string) {
+func (m *Message) TextHTML(textHTML string) {
 	m.textHTML = textHTML
 }
 
-func (m *Message) SetTextPlain(textPlain string) {
+func (m *Message) TextPlain(textPlain string) {
 	m.textPlain = textPlain
 }
 
@@ -85,8 +110,22 @@ func (m *Message) AddAttachmentFile(file *os.File) {
 	m.attachmentFile = append(m.attachmentFile, file)
 }
 
+func (m Message) Write(w io.Writer) {
+	m.HeaderWrite(w)
+	m.BodyWrite(w)
+}
+
 func (m Message) HeaderWrite(w io.Writer) {
-	// ToDo
+	w.Write([]byte("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n"))
+	w.Write([]byte("From: " + m.from.String() + "\r\n"))
+	w.Write([]byte("To: " + JoinMails(m.to) + "\r\n"))
+	if len(m.cc) > 0 {
+		w.Write([]byte("Cc: " + JoinMails(m.cc) + "\r\n"))
+	}
+	if len(m.cc) > 0 {
+		w.Write([]byte("Bcc: " + JoinMails(m.bcc) + "\r\n"))
+	}
+	w.Write([]byte("Subject: " + mime.BEncoding.Encode("utf-8", m.subject) + "\r\n"))
 }
 
 func (m Message) BodyWrite(w io.Writer) {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	email "github.com/supme/handSendEmail"
+	"github.com/supme/handSendEmail/message"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,7 +15,7 @@ const addr = ":8080"
 
 func main() {
 	buf := bytes.NewBufferString("Email body:\r\n")
-	e := email.NewMessage()
+	e := message.NewMessage()
 
 	e.From("Алексей", "alexey@domain.tld")
 	e.To("Василий", "vasiliy@domain.tld")
@@ -56,7 +56,7 @@ func main() {
 	panic(http.ListenAndServe(addr, mux))
 }
 
-func root(w http.ResponseWriter, r *http.Request) {
+func root(w http.ResponseWriter, _ *http.Request) {
 	tmpl, err := template.ParseFiles("template/index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusOK)

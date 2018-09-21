@@ -5,42 +5,103 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/supme/handSendEmail/message"
+	"github.com/supme/handSendEmail/send"
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 )
 
 const addr = ":8080"
 
 func main() {
-	buf := bytes.NewBufferString("Email body:\r\n")
-	e := message.NewMessage()
+	var err error
 
-	e.From("Алексей", "alexey@domain.tld")
-	e.To("Василий", "vasiliy@domain.tld")
-	e.To("Фёдор", "fedor@domain.tld")
-	e.Cc("Василий 1", "vasiliy_1@domain.tld")
-	e.Cc("Фёдор 1", "fedor_1@domain.tld")
-	e.Bcc("Василий 2", "vasiliy_2@domain.tld")
-	e.Bcc("Фёдор 2", "fedor_2@domain.tld")
-	e.Subject("Тестовый email")
-	e.TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>")
-	e.TextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
-	fRelated, err := os.Open("template/index.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-	e.AddRelatedFile(fRelated)
+	localname := "localhost"
 
-	fAttachment, err := os.Open("../message.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	e.AddAttachmentFile(fAttachment)
+	e := message.NewMessage().
+		From(message.NewMail("Алексей", "alexey@domain.tld")).
+		To(message.NewMail("Василий", "vasiliy@domain.tld")).
+		To(message.NewMail("Фёдор", "fedor@domain.tld")).
+		Cc(message.NewMail("Василий 1", "vasiliy_1@domain.tld")).
+		Cc(message.NewMail("Фёдор 1", "fedor_1@domain.tld")).
+		Bcc(message.NewMail("Василий 2", "vasiliy_2@domain.tld")).
+		Bcc(message.NewMail("Фёдор 2", "fedor_2@domain.tld")).
+		Subject("Тестовый email").
+		TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>").
+		TextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
+	//fRelated, err := os.Open("template/index.html")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//e.AddRelatedFile(fRelated)
+	//
+	//fAttachment, err := os.Open("../message.txt")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//e.AddAttachmentFile(fAttachment)
 
+	buf := &bytes.Buffer{}
 	e.Write(buf)
-	fmt.Println(buf.String())
+
+	for _, to := range e.GetRecipientEmails() {
+		mail := send.NewSmtp(localname)
+		fmt.Println("Connect...\nHELO", localname)
+		err = mail.CommandConnectAndHello(to)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Ok")
+		//		time.Sleep(time.Second)
+
+		fmt.Println("FROM: ", e.GetFromEmail())
+		err = mail.CommandFrom(e.GetFromEmail())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Ok")
+		//		time.Sleep(time.Second)
+
+		fmt.Println("RCPT: ", to)
+		err = mail.CommandRcpt(to)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Ok")
+		//		time.Sleep(time.Second)
+
+		fmt.Println("DATA ...you message data...")
+		//fmt.Printf("DATA\n%s\n.\n\n", buf.String())
+		err = mail.CommandData(buf.Bytes())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Ok")
+		//		time.Sleep(time.Second*10)
+
+		fmt.Println("QUIT")
+		err = mail.CommandQuit()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		fmt.Println("Ok")
+		//time.Sleep(time.Second)
+
+		//fmt.Println("CLOSE")
+		//err = mail.CommandClose()
+		//if err != nil {
+		//	log.Println(err)
+		//	return
+		//}
+		//fmt.Println("Ok")
+		//time.Sleep(time.Second)
+	}
+
 	return
 
 	mux := http.NewServeMux()

@@ -40,7 +40,7 @@ func (m Mail) String() string {
 	if m.name == "" {
 		return m.email
 	}
-	return mime.BEncoding.Encode("utf-8", m.name) + "<" + m.email + ">"
+	return mime.BEncoding.Encode("utf-8", m.name) + " <" + m.email + ">"
 }
 
 func JoinMails(ms []Mail) string {
@@ -56,6 +56,7 @@ type Message struct {
 	to             []Mail
 	cc             []Mail
 	bcc            []Mail
+	returnPath     Mail
 	headers        map[string]string
 	subject        string
 	textHTML       string
@@ -68,46 +69,79 @@ func NewMessage() *Message {
 	return new(Message)
 }
 
-func (m *Message) From(name, email string) {
-	m.from = NewMail(name, email)
+func (m *Message) From(email Mail) *Message {
+	m.from = email
+	return m
 }
 
-func (m *Message) To(name, email string) {
-	m.to = append(m.to, NewMail(name, email))
+func (m *Message) To(email Mail) *Message {
+	m.to = append(m.to, email)
+	return m
 }
 
-func (m *Message) Cc(name, email string) {
-	m.cc = append(m.cc, NewMail(name, email))
+func (m *Message) Cc(email Mail) *Message {
+	m.cc = append(m.cc, email)
+	return m
 }
 
-func (m *Message) Bcc(name, email string) {
-	m.bcc = append(m.bcc, NewMail(name, email))
+func (m *Message) Bcc(email Mail) *Message {
+	m.bcc = append(m.bcc, email)
+	return m
 }
 
-func (m *Message) Subject(subject string) {
+func (m *Message) ReturnPath(email Mail) *Message {
+	m.returnPath = email
+	return m
+}
+
+func (m *Message) GetFromEmail() string {
+	return m.from.email
+}
+
+func (m *Message) GetRecipientEmails() []string {
+	recipients := make([]string, 0, len(m.to)+len(m.cc)+len(m.bcc))
+	for i := range m.to {
+		recipients = append(recipients, m.to[i].email)
+	}
+	for i := range m.cc {
+		recipients = append(recipients, m.cc[i].email)
+	}
+	for i := range m.bcc {
+		recipients = append(recipients, m.bcc[i].email)
+	}
+	return recipients
+}
+
+func (m *Message) Subject(subject string) *Message {
 	m.subject = subject
+	return m
 }
 
-func (m *Message) AddHeaders(headers map[string]string) {
+func (m *Message) AddHeaders(headers map[string]string) *Message {
 	for k, v := range headers {
 		m.headers[k] = v
 	}
+	return m
 }
 
-func (m *Message) TextHTML(textHTML string) {
+func (m *Message) TextHTML(textHTML string) *Message {
 	m.textHTML = textHTML
+	return m
 }
 
-func (m *Message) TextPlain(textPlain string) {
+func (m *Message) TextPlain(textPlain string) *Message {
 	m.textPlain = textPlain
+	return m
 }
 
-func (m *Message) AddRelatedFile(file *os.File) {
+func (m *Message) AddRelatedFile(file *os.File) *Message {
 	m.relatedFile = append(m.relatedFile, file)
+	return m
 }
 
-func (m *Message) AddAttachmentFile(file *os.File) {
+func (m *Message) AddAttachmentFile(file *os.File) *Message {
 	m.attachmentFile = append(m.attachmentFile, file)
+	return m
 }
 
 func (m Message) Write(w io.Writer) {
@@ -116,6 +150,7 @@ func (m Message) Write(w io.Writer) {
 }
 
 func (m Message) HeaderWrite(w io.Writer) {
+	w.Write([]byte("MIME-Version: 1.0\r\n"))
 	w.Write([]byte("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n"))
 	w.Write([]byte("From: " + m.from.String() + "\r\n"))
 	w.Write([]byte("To: " + JoinMails(m.to) + "\r\n"))
@@ -125,22 +160,24 @@ func (m Message) HeaderWrite(w io.Writer) {
 	if len(m.cc) > 0 {
 		w.Write([]byte("Bcc: " + JoinMails(m.bcc) + "\r\n"))
 	}
+
+	if m.returnPath.email != "" {
+		w.Write([]byte("Return-Path: " + m.returnPath.String() + "\r\n"))
+	}
+	w.Write([]byte("Content-Type: multipart/mixed;\r\n\tboundary=\"" + boundaryMixed + "\"\r\n"))
 	w.Write([]byte("Subject: " + mime.BEncoding.Encode("utf-8", m.subject) + "\r\n"))
+	w.Write([]byte("\r\n"))
+	w.Write([]byte("This is a multi-part message in MIME format.\r\n"))
+	w.Write([]byte("\r\n"))
 }
 
 func (m Message) BodyWrite(w io.Writer) {
 	// Начинаем наше multipart/mixed письмо
-	w.Write([]byte("Content-Type: multipart/mixed; boundary=" + boundaryMixed + "\"\r\n"))
-	w.Write([]byte("MIME-Version: 1.0\r\n"))
-	w.Write([]byte("\r\n"))
-	w.Write([]byte("This is a multi-part message in MIME format.\r\n"))
-	w.Write([]byte("\r\n"))
-
 	// У нас будут зависящие друг от друга блоки с mixed разделителем вверху
 	{
 		w.Write([]byte(boundaryMixedBegin))
-		w.Write([]byte("Content-Type: multipart/related; boundary=\"" + boundaryRelated + "\"\r\n"))
 		w.Write([]byte("MIME-Version: 1.0\r\n"))
+		w.Write([]byte("Content-Type: multipart/related;\r\n\tboundary=\"" + boundaryRelated + "\"\r\n"))
 		w.Write([]byte("\r\n"))
 
 		// Первым зависящим блоком будут альтернативные версии с related разделителем вверху
@@ -148,15 +185,15 @@ func (m Message) BodyWrite(w io.Writer) {
 			w.Write([]byte(boundaryRelatedBegin))
 
 			{
-				w.Write([]byte("Content-Type: multipart/alternative; boundary=\"" + boundaryAlternative + "\"\r\n"))
 				w.Write([]byte("MIME-Version: 1.0\r\n"))
+				w.Write([]byte("Content-Type: multipart/alternative;\r\n\tboundary=\"" + boundaryAlternative + "\"\r\n"))
 				w.Write([]byte("\r\n"))
 
 				// Если textHTML не пуст добавляем альтернативный блок text/html с alternative разделителем вверху
 				if m.textHTML != "" {
 					w.Write([]byte(boundaryAlternativeBegin))
-					w.Write([]byte("Content-Type: text/html; charset=\"utf-8\"\r\n"))
 					w.Write([]byte("MIME-Version: 1.0\r\n"))
+					w.Write([]byte("Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n"))
 					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
 					w.Write([]byte("\r\n"))
 					// Пишем textHTML кодируя его в base64 с переводом строки и возвратом каретки каждые 76 символов
@@ -168,8 +205,8 @@ func (m Message) BodyWrite(w io.Writer) {
 				// Если textPlain не пуст добавляем блок text/plain с alternative разделителем вверху
 				if m.textPlain != "" {
 					w.Write([]byte(boundaryAlternativeBegin))
-					w.Write([]byte("Content-Type: text/plain; charset=\"utf-8\"\r\n"))
 					w.Write([]byte("MIME-Version: 1.0\r\n"))
+					w.Write([]byte("Content-Type: text/plain;\r\n\tcharset=\"utf-8\"\r\n"))
 					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
 					w.Write([]byte("\r\n"))
 					// Пишем textPlain кодируя аналогично textHTML
@@ -207,10 +244,10 @@ func (m Message) BodyWrite(w io.Writer) {
 					m.relatedFile[i].Seek(0, 0)
 					// Пишем заголовок для файла с related разделителем вверху
 					w.Write([]byte(boundaryRelatedBegin))
-					w.Write([]byte("Content-Type: " + fileMime + "; name=\"" + fileName + "\"\r\n"))
+					w.Write([]byte("Content-Type: " + fileMime + ";\r\n\tname=\"" + fileName + "\"\r\n"))
 					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
 					w.Write([]byte("Content-ID: <" + fileName + ">\r\n"))
-					w.Write([]byte("Content-Disposition: inline; filename=\"" + fileName + "\"; size=" + fileSize + ";\r\n"))
+					w.Write([]byte("Content-Disposition: inline;\r\n\tfilename=\"" + fileName + "\"; size=" + fileSize + ";\r\n"))
 					w.Write([]byte("\r\n"))
 					// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
 					base64FileWriter(w, m.relatedFile[i])
@@ -246,9 +283,9 @@ func (m Message) BodyWrite(w io.Writer) {
 				m.attachmentFile[i].Seek(0, 0)
 				// Пишем заголовок для файла с mixed разделителем вверху
 				w.Write([]byte(boundaryMixedBegin))
-				w.Write([]byte("Content-Type: " + fileMime + "; name=\"" + fileName + "\"\r\n"))
+				w.Write([]byte("Content-Type: " + fileMime + ";\r\n\tname=\"" + fileName + "\"\r\n"))
 				w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
-				w.Write([]byte("Content-Disposition: attachment; filename=\"" + fileName + "\"; size=" + fileSize + ";\r\n"))
+				w.Write([]byte("Content-Disposition: attachment;\r\n\tfilename=\"" + fileName + "\"; size=" + fileSize + ";\r\n"))
 				w.Write([]byte("\r\n"))
 				// Пишем файл кодируя в base64 с переносами строк через каждые 76 символов
 				base64FileWriter(w, m.attachmentFile[i])

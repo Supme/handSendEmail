@@ -9,15 +9,21 @@ import (
 )
 
 type SMTP struct {
-	localName string
+	addr      net.Addr
+	LocalName string
 	conn      net.Conn
 	client    *smtp.Client
 }
 
-func NewSmtp(localName string) SMTP {
+type Interface struct {
+	Addr     net.Addr
+	Hostname string
+}
+
+func NewSmtp(iface Interface) (*SMTP, error) {
 	var s SMTP
-	s.localName = localName
-	return s
+	s.LocalName = iface.Hostname
+	return &s, nil
 }
 
 func (s *SMTP) CommandConnectAndHello(emailTo string) error {
@@ -94,7 +100,7 @@ func (s *SMTP) connect(host string) error {
 			errs = append(errs, err.Error())
 			continue
 		}
-		if err = s.client.Hello(s.localName); err != nil {
+		if err = s.client.Hello(s.LocalName); err != nil {
 			errs = append(errs, err.Error())
 			continue
 		}

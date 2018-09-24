@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/supme/handSendEmail/email"
 	"github.com/supme/handSendEmail/message"
-	"github.com/supme/handSendEmail/send"
 	"html/template"
 	"log"
 	"net/http"
@@ -17,10 +17,10 @@ const addr = ":8080"
 func main() {
 	var (
 		err   error
-		iface *send.Iface
+		iface *email.Iface
 	)
 
-	ifaces, err := send.GetInterfaces(map[string]string{"192.168.0.10": "1.2.3.4"})
+	ifaces, err := email.GetInterfaces(map[string]string{"192.168.0.10": "1.2.3.4"})
 	for i := range ifaces {
 		fmt.Printf("- %d (Addr: '%s', Hostname: '%s'\n", i, ifaces[i].IP, ifaces[i].Hostname)
 	}
@@ -39,8 +39,8 @@ func main() {
 		Bcc(message.NewMail("Василий 2", "vasiliy_2@domain.tld")).
 		Bcc(message.NewMail("Фёдор 2", "fedor_2@domain.tld")).
 		Subject("Тестовый email").
-		TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1><br><img src='cid:me.gif' alt='Super me'>").
-		TextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
+		TextHTML("<h1>Привет! Это я.</h1><br><img src=\"cid:me.gif\"/><br><h2>Съешь ещё этих мягких французских булок да выпей чаю</h2>").
+		TextPlain("Привет! Это я.\n[картинка меня]\nСъешь ещё этих мягких французских булок да выпей чаю")
 
 	fRelated, err := os.Open("../testdata/me.gif")
 	if err != nil {
@@ -48,17 +48,17 @@ func main() {
 	}
 	e.AddRelatedFile(fRelated)
 
-	//fAttachment, err := os.Open("../message.txt")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//e.AddAttachmentFile(fAttachment)
+	fAttachment, err := os.Open("../testdata/the_little_go_book.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	e.AddAttachmentFile(fAttachment)
 
 	buf := &bytes.Buffer{}
 	e.Write(buf)
 
 	for _, to := range e.GetRecipientEmails() {
-		mail := send.NewSmtp(iface)
+		mail := email.NewSmtp(iface)
 		fmt.Println("Connect...\nHELO", iface.Hostname)
 		err = mail.CommandConnectAndHello(to)
 		if err != nil {

@@ -189,19 +189,6 @@ func (m Message) BodyWrite(w io.Writer) {
 				w.Write([]byte("Content-Type: multipart/alternative;\r\n\tboundary=\"" + boundaryAlternative + "\"\r\n"))
 				w.Write([]byte("\r\n"))
 
-				// Если textHTML не пуст добавляем альтернативный блок text/html с alternative разделителем вверху
-				if m.textHTML != "" {
-					w.Write([]byte(boundaryAlternativeBegin))
-					w.Write([]byte("MIME-Version: 1.0\r\n"))
-					w.Write([]byte("Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n"))
-					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
-					w.Write([]byte("\r\n"))
-					// Пишем textHTML кодируя его в base64 с переводом строки и возвратом каретки каждые 76 символов
-					base64TextWriter(w, m.textHTML)
-					w.Write([]byte("\r\n"))
-					w.Write([]byte("\r\n"))
-				}
-
 				// Если textPlain не пуст добавляем блок text/plain с alternative разделителем вверху
 				if m.textPlain != "" {
 					w.Write([]byte(boundaryAlternativeBegin))
@@ -211,6 +198,19 @@ func (m Message) BodyWrite(w io.Writer) {
 					w.Write([]byte("\r\n"))
 					// Пишем textPlain кодируя аналогично textHTML
 					base64TextWriter(w, m.textPlain)
+					w.Write([]byte("\r\n"))
+					w.Write([]byte("\r\n"))
+				}
+
+				// Если textHTML не пуст добавляем альтернативный блок text/html с alternative разделителем вверху
+				if m.textHTML != "" {
+					w.Write([]byte(boundaryAlternativeBegin))
+					w.Write([]byte("MIME-Version: 1.0\r\n"))
+					w.Write([]byte("Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n"))
+					w.Write([]byte("Content-Transfer-Encoding: base64\r\n"))
+					w.Write([]byte("\r\n"))
+					// Пишем textHTML кодируя его в base64 с переводом строки и возвратом каретки каждые 76 символов
+					base64TextWriter(w, m.textHTML)
 					w.Write([]byte("\r\n"))
 					w.Write([]byte("\r\n"))
 				}

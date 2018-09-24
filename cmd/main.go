@@ -9,14 +9,26 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 const addr = ":8080"
 
 func main() {
-	var err error
+	var (
+		err   error
+		iface *send.Iface
+	)
 
-	localname := "localhost"
+	ifaces, err := send.GetInterfaces(map[string]string{"192.168.0.10": "1.2.3.4"})
+	for i := range ifaces {
+		fmt.Printf("- %d (Addr: '%s', Hostname: '%s'\n", i, ifaces[i].IP, ifaces[i].Hostname)
+	}
+	var n int
+	fmt.Print("Выберите интерфейс через который будем слать: ")
+	fmt.Scanln(&n)
+	iface = ifaces[n]
+	fmt.Printf("Выбран интерфейс %s ('%s')\n", iface.IP, iface.Hostname)
 
 	e := message.NewMessage().
 		From(message.NewMail("Алексей", "alexey@domain.tld")).
@@ -27,14 +39,15 @@ func main() {
 		Bcc(message.NewMail("Василий 2", "vasiliy_2@domain.tld")).
 		Bcc(message.NewMail("Фёдор 2", "fedor_2@domain.tld")).
 		Subject("Тестовый email").
-		TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1>").
+		TextHTML("<h1>Съешь ещё этих мягких французских булок да выпей чаю</h1><br><img src='cid:me.gif' alt='Super me'>").
 		TextPlain("Съешь ещё этих мягких французских булок да выпей чаю")
-	//fRelated, err := os.Open("template/index.html")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//e.AddRelatedFile(fRelated)
-	//
+
+	fRelated, err := os.Open("../testdata/me.gif")
+	if err != nil {
+		log.Fatal(err)
+	}
+	e.AddRelatedFile(fRelated)
+
 	//fAttachment, err := os.Open("../message.txt")
 	//if err != nil {
 	//	log.Fatal(err)
@@ -45,8 +58,8 @@ func main() {
 	e.Write(buf)
 
 	for _, to := range e.GetRecipientEmails() {
-		mail := send.NewSmtp(localname)
-		fmt.Println("Connect...\nHELO", localname)
+		mail := send.NewSmtp(iface)
+		fmt.Println("Connect...\nHELO", iface.Hostname)
 		err = mail.CommandConnectAndHello(to)
 		if err != nil {
 			log.Println(err)

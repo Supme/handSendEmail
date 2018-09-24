@@ -15,7 +15,7 @@ func main() {
 		iface *email.Iface
 	)
 
-	ifaces, err := email.GetInterfaces(map[string]string{"192.168.0.10": "1.2.3.4"})
+	ifaces, err := email.GetInterfaces(map[string]string{"192.168.0.10": "1.2.3.4"}) // map used for NAT connection
 	for i := range ifaces {
 		fmt.Printf("- %d (Addr: '%s', Hostname: '%s'\n", i, ifaces[i].IP, ifaces[i].Hostname)
 	}

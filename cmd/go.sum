@@ -1,2 +1,4 @@
-github.com/supme/handSendEmail v0.0.0-20180924153943-74da6fd4db0f h1:InmPnDm8P/oGRr+Av1OpjbMtBuYq404/cDUsjDEwE28=
-github.com/supme/handSendEmail v0.0.0-20180924153943-74da6fd4db0f/go.mod h1:alqsReyc8mICzIuaU1ExO9mWupfuFlzdl1Vz+JGOkE8=
+github.com/supme/handSendEmail/email v0.0.0-20180924155201-d9677c6c81f0 h1:9C5HjIk5ElG1y4ruh2b8Ya1pmSjhSIkzktpU7SWEwwI=
+github.com/supme/handSendEmail/email v0.0.0-20180924155201-d9677c6c81f0/go.mod h1:NVi0YHrlZOeBCAg6abBHYn8uLt2Qhjvl+w6jzrQo5+M=
+github.com/supme/handSendEmail/message v0.0.0-20180924155201-d9677c6c81f0 h1:firCnDnRs4YBx2ebrxoEKANqF9nYATsTObySJiZR9kw=
+github.com/supme/handSendEmail/message v0.0.0-20180924155201-d9677c6c81f0/go.mod h1:lPtkj0l436FRQgr9y98v+4yHAyTeMHcJxMQkIgzE7uk=

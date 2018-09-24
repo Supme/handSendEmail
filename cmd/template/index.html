@@ -20,7 +20,8 @@
             overflow-y: scroll;
         }
         .text-data{
-            background: #eee;
+            background: #000;
+            color: #ccc;
             float: left;
             width: 481px;
             height: 690px;
@@ -42,7 +43,7 @@
             text-align: center;
         }
         label{
-            padding-left: 0px;
+            padding-left: 2px;
             width: 125px;
             display: inline-block
         }
@@ -64,93 +65,77 @@
             <fieldset>
                 <legend>Email form</legend>
 
-                <label for="server-name">Server name:</label>
-                <input id="server-name" name="server-name" type="text" value="localhost" size="25"/><br>
-                <label for="server-port">Server port:</label>
-                <input id="server-port" name="server-port" type="number" min="0" max="65535" step="1" value="25"/><br>
-                <label for="connect"></label>
-                <input id="connect" type="button" name="connect" value="Connect >" onclick="connect();">
-
-                <hr>
-
-                <label for="send-ehlo"></label>
-                <input id="send-ehlo" type="button" name="send-ehlo" value="Send EHLO >" onclick="ehlo();">
-                <br>
-                <label for="send-helo"></label>
-                <input id="send-helo" type="button" name="send-helo" value="Send HELO >" onclick="helo();">
-
-                <hr>
-
                 <label for="from-name">From name:</label>
                 <input id="from-name" name="from-name" type="text" size="25"/><br>
                 <label for="from-email">From email:</label>
                 <input id="from-email" name="from-email" type="email" size="25"/><br>
-                <label for="send-from"></label>
-                <input id="send-from" type="button" name="send-from" value="Send MAIL FROM >" onclick="mailFrom();">
 
                 <hr>
 
-                <label for="to-name">To name:</label>
-                <input id="to-name" name="to-name" type="text" size="25"/><br>
-                <label for="to-email">To email:</label>
-                <input id="to-email" name="to-email" type="email" size="25"/><br>
-                <label for="send-to"></label>
-                <input id="send-to" type="button" name="send-to" value="Send RCPT TO >" onclick="mailTo();">
+                <div id="to_block">
+                    <label for="to_name_1">To name:</label>
+                    <input id="to_name_1" name="to_name_1" type="text" size="25"/><br>
+                    <label for="to_email_1">To email:</label>
+                    <input id="to_email_1" name="to_email_1" type="email" size="25"/><br>
+                    <br>
+                </div>
+                <label for="add_to"></label>
+                <input id="add_to" type="button" name="add_to" value="add_to>" onclick="addTo();">
 
                 <hr>
 
-                <label for="header-name">Header</label><br>
-                <input id="header-name" name="header-name" type="text" size="25"/> :
-                <input id="header-value" name="header-value" type="text" size="25"/><br>
-                <label for="send-header"></label>
-                <input id="send-header" type="button" name="send-header" value="Send header >" onclick="header();">
+                <div id="cc_block">
+                    <label for="cc_name_1">Cc name:</label>
+                    <input id="cc_name_1" name="cc_name_1" type="text" size="25"/><br>
+                    <label for="cc_email_1">Cc email:</label>
+                    <input id="cc_email_1" name="cc_email_1" type="email" size="25"/><br>
+                    <br>
+                </div>
+                <label for="add_cc"></label>
+                <input id="add_cc" type="button" name="add_cc" value="add_cc" onclick="addCc();">
 
                 <hr>
 
-                <label for="send-data"></label>
-                <input id="send-data" type="button" name="send-data" value="Send DATA >" onclick="data();">
+                <div id="bcc_block">
+                    <label for="bcc_name_1">Bcc name:</label>
+                    <input id="bcc_name_1" name="bcc_name_1" type="text" size="25"/><br>
+                    <label for="bcc_email_1">Bcc email:</label>
+                    <input id="bcc_email_1" name="bcc_email_1" type="email" size="25"/><br>
+                    <br>
+                </div>
+                <label for="add_bcc"></label>
+                <input id="add_bcc" type="button" name="add_bcc" value="add_bcc>" onclick="addBcc();">
 
                 <hr>
 
-                <label for="multipart-mixed">Content-Type:</label>
-                <input id="multipart-mixed" type="button" name="multipart-mixed" value="multipart/mixed >" onclick="multipartMixed();"><br>
-                <label for="boundary-mixed"></label>
-                <input id="boundary-mixed" type="button" name="boundary-mixed" value="boundary mixed >" onclick="boundaryMixed();"><br>
-                <br>
-                <label for="multipart-alternative"></label>
-                <input id="multipart-alternative" type="button" name="multipart-alternative" value="multipart/alternative >" onclick="multipartAlternative();"><br>
-                <label for="boundary-alternative"></label>
-                <input id="boundary-alternative" type="button" name="boundary-alternative" value="boundary alternative >" onclick="boundaryAlternative();"><br>
-                <br>
-                <label for="multipart-related"></label>
-                <input id="multipart-related" type="button" name="multipart-related" value="multipart/related >" onclick="multipartRelated();"><br>
-                <label for="boundary-related"></label>
-                <input id="boundary-related" type="button" name="boundary-related" value="boundary related >" onclick="boundaryRelated();"><br>
+                <label for="header-name">Header</label>
+                <input id="header-name" name="header-name" type="text" size="15"/> :
+                <input id="header-name" name="header-value" type="text" size="15"/><br>
 
                 <hr>
 
                 <label for="text-plain">Text/Plain:</label>
                 <textarea id="text-plain" name="text-plain" rows=6 cols=60></textarea>
-                <br>
-                <input id="send-text-plain" type="button" name="send-text-plain" value="Send text/plain >" onclick="sendTextPlain();">
 
                 <hr>
 
                 <label for="text-html">Text/HTML:</label>
                 <textarea id="text-html" name="text-html" rows=6 cols=60></textarea>
-                <br>
-                <input id="send-text-html" type="button" name="send-text-html" value="Send text/html >" onclick="sendTextHTML();">
 
                 <hr>
 
-                <label for="file">File:</label><br>
-                <input id="file" type="file" name="file">
-                <input id="send-file" type="button" name="send-file" value="Send file >" onclick="sendFile();">
+                <label for="related_file">Related file:</label><br>
+                <input id="related_file" type="file" name="related_file">
 
                 <hr>
 
-                <label for="end-data"></label>
-                <input id="end-data" type="button" name="end-data" value="End DATA >" onclick="sendEndData;">
+                <label for="attached_file">Attached file:</label><br>
+                <input id="attached_file" type="file" name="attached_file">
+
+                <hr>
+
+                <label for="send"></label>
+                <input id="send" type="button" name="send" value="send >" onclick="send();">
 
             </fieldset>
         </form>
@@ -160,15 +145,42 @@
     </div>
     <div class="footer">Hand Send Email</div>
         <script>
-            // function addFromEmail() {
-            //     var div = document.getElementById('to-email');
-            //     div.innerHTML = '<label for="to-name">To name:</label>\n' +
-            //             '<input id="to-name" name="to-name" type="text" size="25"/>\n' +
-            //             '<label for="to-email">To email:</label>\n' +
-            //             '<input id="to-email" name="to-email" type="email" size="25"/>\n' +
-            //             '<br>';
-            // }
-            // window.onload(addFromEmail())
+            var to_count = 1;
+            function addTo() {
+                to_count +=1;
+                var div = document.getElementById('to_block');
+                div.innerHTML = div.innerHTML +
+                        '<label for="to_name_'+ to_count + '">To name:</label>' +
+                        '<input id="to_name_' + to_count +'" name="to_name_' + to_count + '" type="text" size="25"/><br>' +
+                        '<label for="to_email_' + to_count + '">To email:</label>' +
+                        '<input id="to_email_' + to_count + '" name="to_email_' + to_count + '" type="email" size="25"/><br>' +
+                        '<br>';
+            }
+
+            var cc_count = 1;
+            function addCc() {
+                cc_count +=1;
+                var div = document.getElementById('cc_block');
+                div.innerHTML = div.innerHTML +
+                        '<label for="cc_name_'+ cc_count + '">Cc name:</label>' +
+                        '<input id="cc_name_' + cc_count +'" name="cc_name_' + cc_count + '" type="text" size="25"/><br>' +
+                        '<label for="cc_email_' + cc_count + '">Cc email:</label>' +
+                        '<input id="cc_email_' + cc_count + '" name="cc_email_' + cc_count + '" type="email" size="25"/><br>' +
+                        '<br>';
+            }
+
+            var bcc_count = 1;
+            function addBcc() {
+                bcc_count +=1;
+                var div = document.getElementById('bcc_block');
+                div.innerHTML = div.innerHTML +
+                        '<label for="bcc_name_'+ bcc_count + '">Bcc name:</label>' +
+                        '<input id="bcc_name_' + bcc_count +'" name="bcc_name_' + bcc_count + '" type="text" size="25"/><br>' +
+                        '<label for="bcc_email_' + bcc_count + '">Bcc email:</label>' +
+                        '<input id="bcc_email_' + bcc_count + '" name="bcc_email_' + bcc_count + '" type="email" size="25"/><br>' +
+                        '<br>';
+            }
+            // window.onload();
 
         </script>
 {{- template "_footer" -}}
@@ -180,56 +192,3 @@
 </body>
 </html>
 {{- end -}}
-<!--
-HELO ryaz.dmbasis.ru
-
-MAIL FROM:   <it@dmbasis.ru>
-
-RCPT TO: <a.agafonov@dmbasis.ru>
-RCPT TO: <me@supme.ru>
-RCPT TO: <supme@ngs.ru>
-RCPT TO: <supmea@gmail.ru>
-RCPT TO: <supmea@gmail.com>
-RCPT TO: <supme@yandex.ru>
-RCPT TO: <a.alexey@ngs.ru>
-
-DATA
-
-From: IT Command <it@dmbasis.ru>
-To: Alexey Agafonov <a.agafonov@dmbasis.ru>
-Subject: =?koi8-r?B?/NTPIM3PyiDUxdPU?=
-Message-Id:<efhjehfeiof>
-X-Postmaster-Msgtype: test campaign
-Accept-Language: ru-RU, en-US
-Content-Language: ru-RU
-Content-Type: multipart/alternative;
-	boundary="_000_HE1P195MB0009721FFA25141E877B466191DB0HE1P195MB0009EURP_"
-MIME-Version: 1.0
-
---_000_HE1P195MB0009721FFA25141E877B466191DB0HE1P195MB0009EURP_
-Content-Type: text/plain; charset="koi8-r"
-Content-Transfer-Encoding: quoted-printable
-
-=F4=C5=D3=D4 =CE=CF=CD=C5=D2 =CF=C4=C9=CE.
-
---_000_HE1P195MB0009721FFA25141E877B466191DB0HE1P195MB0009EURP_
-Content-Type: text/html; charset="koi8-r"
-Content-Transfer-Encoding: quoted-printable
-
-<html>
-<head>
-<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dkoi8-r">
-</head>
-<body dir=3D"ltr">
-                 <div id=3D"divtagdefaultwrapper" style=3D"font-size:12pt;color:#000000;font=
--family:Calibri,Helvetica,sans-serif;" dir=3D"ltr">
-<p>=F4=C5=D3=D4 =CE=CF=CD=C5=D2 =CF=C4=C9=CE.</p>
-</div>
-</body>
-</html>
-
---_000_HE1P195MB0009721FFA25141E877B466191DB0HE1P195MB0009EURP_--
-.
-
-QUIT
--->

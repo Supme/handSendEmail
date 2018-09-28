@@ -2,6 +2,13 @@
 package message
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -52,6 +59,8 @@ func JoinMails(ms []Mail) string {
 }
 
 type Message struct {
+	dkimSelector   string
+	dkimPrivateKey string
 	from           Mail
 	to             []Mail
 	cc             []Mail
@@ -91,6 +100,12 @@ func (m *Message) Bcc(email Mail) *Message {
 
 func (m *Message) ReturnPath(email Mail) *Message {
 	m.returnPath = email
+	return m
+}
+
+func (m *Message) SetDKIM(dkimSelector, dkimPrivateKey string) *Message {
+	m.dkimSelector = dkimSelector
+	m.dkimPrivateKey = dkimPrivateKey
 	return m
 }
 
@@ -145,8 +160,62 @@ func (m *Message) AddAttachmentFile(file *os.File) *Message {
 }
 
 func (m Message) Write(w io.Writer) {
+	m.SignDKIM(w)
 	m.HeaderWrite(w)
 	m.BodyWrite(w)
+}
+
+func (m Message) SignDKIM(w io.Writer) error {
+	splitEmail := strings.Split(m.from.email, "@")
+	if len(splitEmail) != 2 {
+		return fmt.Errorf("bad email format")
+	}
+	domain := splitEmail[1]
+	block, _ := pem.Decode([]byte(m.dkimPrivateKey))
+	if block == nil {
+		return fmt.Errorf("failed to parse PEM block containing the public key")
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return err
+	}
+	hasher := crypto.SHA1
+	headerHash := hasher.New()
+	func(w io.Writer) {
+		w.Write([]byte("From: " + m.from.String() + "\r\n"))
+		w.Write([]byte("To: " + JoinMails(m.to) + "\r\n"))
+		w.Write([]byte("Subject: " + mime.BEncoding.Encode("utf-8", m.subject) + "\r\n"))
+	}(headerHash)
+	b, err := rsa.SignPKCS1v15(rand.Reader, privateKey, hasher, headerHash.Sum(nil))
+	if err != nil {
+		return err
+	}
+
+	bodyHash := hasher.New()
+	m.BodyWrite(bodyHash)
+	bh, err := rsa.SignPKCS1v15(rand.Reader, privateKey, hasher, bodyHash.Sum(nil))
+	if err != nil {
+		return err
+	}
+
+	w.Write([]byte(fmt.Sprintf(
+		"DKIM-Signature: v=1; a=rsa-sha1; s=%s; d=%s; c=simple/simple; q=dns/txt; i=%s; a=rsa-sha256; h=From : To : Subject; bh=%s; b=%s;\r\n",
+		m.dkimSelector, domain, m.from.email, base64.StdEncoding.EncodeToString(bh), base64.StdEncoding.EncodeToString(b))),
+	)
+
+	/*
+	   DKIM-Signature: v=1; a=rsa-sha256; s=brisbane; d=example.com;
+	          c=simple/simple; q=dns/txt; i=joe@football.example.com;
+	          a=rsa-sha256;
+	          h=From : To : Subject;
+	          bh=2jUSOH9NhtVGCQWNr9BrIAPreKQjO6Sn7XIkfJVOzv8=;
+	          b=AuUoFEfDxTDkHlLXSZEpZj79LICEps6eda7W3deTVFOk4yAUoqOB
+	          4nujc7YopdG5dWLSdNg6xNAZpOPr+kHxt1IrE+NahM6L/LbvaHut
+	          KVdkLLkpVaVVQPzeRDI009SO2Il5Lu7rDNH6mZckBdrIx0orEtZV
+	          4bmp/YzhwvcubU4=;
+	*/
+
+	return nil
 }
 
 func (m Message) HeaderWrite(w io.Writer) {

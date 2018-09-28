@@ -192,15 +192,26 @@ func (m Message) SignDKIM(w io.Writer) error {
 	}
 
 	bodyHash := hasher.New()
-	m.BodyWrite(bodyHash)
+	var l int
+	func(w io.Writer) {
+		n, _ := w.Write([]byte(boundaryMixedBegin))
+		l += n
+		n, _ = w.Write([]byte("MIME-Version: 1.0\r\n"))
+		l += n
+		n, _ = w.Write([]byte("Content-Type: multipart/related;\r\n\tboundary=\"" + boundaryRelated + "\"\r\n"))
+		l += n
+		n, _ = w.Write([]byte("\r\n"))
+		l += n
+		fmt.Println("l=", l)
+	}(bodyHash)
 	bh, err := rsa.SignPKCS1v15(rand.Reader, privateKey, hasher, bodyHash.Sum(nil))
 	if err != nil {
 		return err
 	}
 
 	w.Write([]byte(fmt.Sprintf(
-		"DKIM-Signature: v=1; a=rsa-sha1; s=%s; d=%s; c=simple/simple; q=dns/txt; i=%s; a=rsa-sha256; h=From : To : Subject; bh=%s; b=%s;\r\n",
-		m.dkimSelector, domain, m.from.email, base64.StdEncoding.EncodeToString(bh), base64.StdEncoding.EncodeToString(b))),
+		"DKIM-Signature: v=1; a=rsa-sha1; s=%s; d=%s; c=simple/simple; q=dns/txt; i=%s; a=rsa-sha256; l=%d; h=From : To : Subject; bh=%s; b=%s;\r\n",
+		m.dkimSelector, domain, m.from.email, l, base64.StdEncoding.EncodeToString(bh), base64.StdEncoding.EncodeToString(b))),
 	)
 
 	/*
